@@ -23,10 +23,6 @@ class Program
         {
             options.DefaultFamilyName = "DejaVu Sans";
         }
-        else if (OperatingSystem.IsMacOS())
-        {
-            options.DefaultFamilyName = "Menlo";
-        }
 
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
