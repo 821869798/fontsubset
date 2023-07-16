@@ -1,0 +1,51 @@
+# Packages
+*.nupkg
+# Symbols
+*.pdb
+# Visual studio files
+*.user
+*.suo
+*.sln.docstates
+*.csproj.user
+*.userprefs
+# Build results
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+build/
+[Bb]in/
+[Oo]bj/
+# Resharper cache directory
+_ReSharper*/
+# NuGet
+packages/
+*.nuget.netcoreapp3.1/
+# MSTest Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+# Visual Studio code coverage results
+*.coverage
+# TeamCity build folder
+_TeamCity*
+# DotCover
+*.dotCover
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+# Installshield output folder
+[Ee]xpress/
+# DocProject
+DocProject/buildhelp/
+# Click-Once manifests
+publish/
+# Publish Web Output
+*.Publish.xml
+# Next build package folder
+[Tt]emp/
+# msbuild binary output folder
+$MsBuildProjectDirectory$/bin/
+.vs
+table-builder.sln
+work_temp
+publish-console
+publish-gui

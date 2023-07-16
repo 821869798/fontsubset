@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>11</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PackageVersion>0.0.2-bate</PackageVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="com\google\typography\font\sfntly\sample\**" />
+    <Compile Remove="com\google\typography\font\sfntly\table\opentype\testing\**" />
+    <EmbeddedResource Remove="com\google\typography\font\sfntly\sample\**" />
+    <EmbeddedResource Remove="com\google\typography\font\sfntly\table\opentype\testing\**" />
+    <None Remove="com\google\typography\font\sfntly\sample\**" />
+    <None Remove="com\google\typography\font\sfntly\table\opentype\testing\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="**/build.xml" />
+    <None Remove="**/build.properties" />
+  </ItemGroup>
+
+
+</Project>
