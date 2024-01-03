@@ -18,16 +18,30 @@ enum OperatingSystem
 
 string _versionString = string.Empty;
 bool _isGithubActionsBuild;
-ConvertableDirectoryPath _sourceDirectory, _buildDirectory, _outputDirectory;
+ConvertableDirectoryPath _srcConsoleDirectory,_srcGuiDirectory, _buildDirectory, _outputDirectory;
 OperatingSystem _operatingSystem;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Custom Function
 ///////////////////////////////////////////////////////////////////////////////
 string GetPath(ConvertableDirectoryPath path)
 {
-   return MakeAbsolute(path).FullPath;
+    return MakeAbsolute(path).FullPath;
+}
+
+DotNetPublishSettings GetDefaultDotNetPublishSettings()
+{
+    var defaultPublishSettings = new DotNetPublishSettings()
+    {
+        SelfContained = true,
+        PublishSingleFile = true,
+        PublishTrimmed = true,
+        Framework = "net8.0",
+        IncludeAllContentForSelfExtract = true,
+        IncludeNativeLibrariesForSelfExtract = true,
+        Configuration = "Release",
+    };
+    return defaultPublishSettings;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,26 +50,27 @@ string GetPath(ConvertableDirectoryPath path)
 
 Setup(ctx =>
 {
-   // Executed BEFORE the first task.
-   Information("Running tasks...");
+    // Executed BEFORE the first task.
+    Information("Running tasks...");
 
-   _versionString = string.Format("{0}.{1}", VERSION_PREFIX, BUILD_NUMBER);
-   _isGithubActionsBuild = GitHubActions.IsRunningOnGitHubActions;
+    _versionString = string.Format("{0}.{1}", VERSION_PREFIX, BUILD_NUMBER);
+    _isGithubActionsBuild = GitHubActions.IsRunningOnGitHubActions;
 
-   if(IsRunningOnLinux())
-   {
-      _operatingSystem = OperatingSystem.Linux;
-   }
-   else if(IsRunningOnMacOs())
-   {
-      _operatingSystem = OperatingSystem.MacOS;
-   }
-   else
-   {
-      _operatingSystem = OperatingSystem.Windows;
-   }
+    if(IsRunningOnLinux())
+    {
+       _operatingSystem = OperatingSystem.Linux;
+    }
+    else if(IsRunningOnMacOs())
+    {
+       _operatingSystem = OperatingSystem.MacOS;
+    }
+    else
+    {
+       _operatingSystem = OperatingSystem.Windows;
+    }
 
-    _sourceDirectory = Directory("../src");
+    _srcConsoleDirectory = Directory("../src/fontsubset-console");
+    _srcGuiDirectory = Directory("../src/fontsubset-gui");
     _buildDirectory = Directory("../build");
     _outputDirectory = Directory("../publish");
 
@@ -63,8 +78,8 @@ Setup(ctx =>
 
 Teardown(ctx =>
 {
-   // Executed AFTER the last task.
-   Information("Finished running tasks.");
+    // Executed AFTER the last task.
+    //Information("Finished running tasks.");
 });
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,17 +89,53 @@ Teardown(ctx =>
 Task("BuildInitialization")
    .Does(() =>
 {
-   Information($"Build is running on {_operatingSystem} operating system{(_isGithubActionsBuild ? " using Github Actions infrastructure" : string.Empty)}.");
-   Information($"Source Directory: {GetPath(_sourceDirectory)}");
-   Information($"Build Directory: {GetPath(_buildDirectory)}");
-   Information($"Version: {_versionString}");
+    Information($"Build is running on {_operatingSystem} operating system{(_isGithubActionsBuild ? " using Github Actions infrastructure" : string.Empty)}.");
+    Information($"Source Console Directory: {GetPath(_srcConsoleDirectory)}");
+    Information($"Source Gui Directory: {GetPath(_srcGuiDirectory)}");
+    Information($"Build Directory: {GetPath(_buildDirectory)}");
+    Information($"Version: {_versionString}");
 
-   Information($"Clean up any existing output in directory '{GetPath(_outputDirectory)}'.");
-   CleanDirectories(GetPath(_outputDirectory));
+    Information($"Clean up any existing output in directory '{GetPath(_outputDirectory)}'.");
+    CleanDirectories(GetPath(_outputDirectory));
+});
+
+Task("BuildWindows64")
+    .WithCriteria(() => _operatingSystem == OperatingSystem.Windows)
+    .IsDependentOn("BuildInitialization")
+    .Does(() => 
+{
+    var outputDirectory = _outputDirectory + Directory("windows");
+
+    Information("Build for Windows (64-bit).");
+    var settings = GetDefaultDotNetPublishSettings();
+    settings.Runtime = "win-x64";
+    settings.OutputDirectory = GetPath(outputDirectory);
+    DotNetPublish(GetPath(_srcConsoleDirectory), settings);
+    DotNetPublish(GetPath(_srcGuiDirectory), settings);
+
+    /*
+    Information("Create portable ZIP archive from the build.");
+    Zip(outputDirectory, _outputDirectory + File("windows_portable.zip"));
+
+    Information("Create installation setup.");
+    var setupSettings = new InnoSetupSettings
+    {
+        OutputDirectory = _outputDirectory,
+        EnableOutput = true,
+        Defines = new Dictionary<string, string> 
+        {
+            { "APP_NAME", APP_NAME },
+            { "APP_VERSION", _versionString },
+            { "APP_ROOT", GetPath(Directory("../")) }
+        }
+    };
+    InnoSetup(_buildDirectory + File("setup.iss"), setupSettings);
+    */
+
 });
 
 Task("Default")
-.IsDependentOn("BuildInitialization")
+.IsDependentOn("BuildWindows64")
 .Does(() => {
    Information("Hello Cake!");
 });
