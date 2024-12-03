@@ -153,10 +153,11 @@ public class SfntTool
         Console.WriteLine("\t-x,-mtx\t Enable Microtype Express compression for EOT format");
     }
 
-    public void subsetFontFile(FileInfo fontFile, FileInfo outputFile, int nIters)
+    public SfntInfo subsetFontFile(FileInfo fontFile, FileInfo outputFile, int nIters)
     {
         FontFactory fontFactory = FontFactory.getInstance();
         FileInputStream fis = null;
+        SfntInfo sfntInfo = new SfntInfo();
         try
         {
             fis = fontFile.OpenRead();
@@ -167,6 +168,7 @@ public class SfntTool
             Font font = fontArray[0];
             IList<CMapTable.CMapId> cmapIds = new List<CMapTable.CMapId>();
             cmapIds.Add(CMapTable.CMapId.WINDOWS_BMP);
+            sfntInfo.OriginFont = font;
             byte[] newFontData = null;
             for (int i = 0; i < nIters; i++)
             {
@@ -211,6 +213,8 @@ public class SfntTool
                     newFont = hintStripper.subset().build();
                 }
 
+                sfntInfo.ModifiedFont = newFont;
+
                 using (FileOutputStream fos = outputFile.OpenWrite())
                 {
                     if (woff)
@@ -237,5 +241,7 @@ public class SfntTool
                 fis.close();
             }
         }
+
+        return sfntInfo;
     }
 }

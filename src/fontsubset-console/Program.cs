@@ -1,4 +1,4 @@
-using Subsetter;
+using sfntly.Subsetter;
 
 public class Program
 {
@@ -83,13 +83,13 @@ public class Program
 
         Console.WriteLine("Start Subset......");
         var result = SubsetterUtil.StartSubset(fontFile, outputFile, charsSetPath, charsfileMatch, containAscii, stripTable).Result;
-        if (result != null)
+        if (result.Exception != null)
         {
-            Console.WriteLine("Subset Failed, Exception:" + result);
+            Console.WriteLine("Subset Failed, Exception:" + result.Exception);
         }
         else
         {
-            Console.WriteLine("Subset Success");
+            Console.WriteLine($"Subset Success,origin count:{result.OriginCharactersCount},after subsetter count:{result.SubsetCharactersCount}");
         }
     }
 

@@ -5,68 +5,68 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
         x:Class="fontsubset_gui.MainWindow"
         Title="fontsubset_gui"
-		Width="800"
+        Width="800"
         Height="400"
 		>
-	<DockPanel>
-		<Grid DockPanel.Dock="Top" MaxHeight="50">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Label Grid.Column="0" Content="Input   Source  Font:" Margin="5" VerticalContentAlignment="Center" />
-			<TextBox x:Name="inputFont" Grid.Column="1" Margin="5"/>
-			<Button x:Name="btnInputFont" Content="Select" Grid.Column="2" Margin="5"/>
-		</Grid>
-		<Grid DockPanel.Dock="Top" MaxHeight="50">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Label Grid.Column="0" Content="Output Subset Font:" Margin="5" VerticalContentAlignment="Center" />
-			<TextBox x:Name="outputFont" Grid.Column="1" Margin="5"/>
-			<Button x:Name="btnOutputFont" Content="Select" Grid.Column="2" Margin="5"/>
-		</Grid>
-		<Grid DockPanel.Dock="Top" MaxHeight="50">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Label Grid.Column="0" Content="Input Chars set Files    Path:" Margin="5" VerticalContentAlignment="Center" />
-			<TextBox x:Name="inputCharsPath" Grid.Column="1" Margin="5"/>
-			<Button x:Name="btnInputCharsPath" Content="Select" Grid.Column="2" Margin="5"/>
-		</Grid>
-		<Grid DockPanel.Dock="Top" MaxHeight="50">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Label Grid.Column="0" Content="Chars set File Regex Match:" Margin="5" VerticalContentAlignment="Center" />
-			<TextBox x:Name="charsFileMatch" Grid.Column="1" Margin="5"/>
-			<Label Grid.Column="2" Content="Custom Regex" Margin="5" VerticalContentAlignment="Center" />
-			<CheckBox x:Name="togCustomMatch" Grid.Column="3" Margin="5"/>
-		</Grid>
-		<Grid DockPanel.Dock="Top" MaxHeight="50">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-				<ColumnDefinition Width="Auto"/>
-			</Grid.ColumnDefinitions>
-			<Panel DockPanel.Dock="Left" Grid.Column="0"/>
-			<Label Grid.Column="1" Content="Strip Extra Table" Margin="5" VerticalContentAlignment="Center" />
-			<CheckBox x:Name="togStripTable" IsChecked="true" Grid.Column="2" Margin="5"/>
-			<Label Grid.Column="3" Content="Retain Ascii Chars" Margin="5" VerticalContentAlignment="Center" />
-			<CheckBox x:Name="togContatinAscii" IsChecked="true" Grid.Column="4" Margin="5"/>
-			<Button x:Name="btnStart" Content="Start Subset" Grid.Column="5" Margin="5"/>
-		</Grid>
-		<Panel DockPanel.Dock="Bottom"/>
-	</DockPanel>
+  <DockPanel>
+    <Grid DockPanel.Dock="Top" MaxHeight="50">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="Input   Source  Font:" Margin="5" VerticalContentAlignment="Center" />
+      <TextBox x:Name="inputFont" Grid.Column="1" Margin="5"/>
+      <Button x:Name="btnInputFont" Content="Select" Grid.Column="2" Margin="5"/>
+    </Grid>
+    <Grid DockPanel.Dock="Top" MaxHeight="50">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="Output Subset Font:" Margin="5" VerticalContentAlignment="Center" />
+      <TextBox x:Name="outputFont" Grid.Column="1" Margin="5"/>
+      <Button x:Name="btnOutputFont" Content="Select" Grid.Column="2" Margin="5"/>
+    </Grid>
+    <Grid DockPanel.Dock="Top" MaxHeight="50">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="Input Chars set Files    Path:" Margin="5" VerticalContentAlignment="Center" />
+      <TextBox x:Name="inputCharsPath" Grid.Column="1" Margin="5"/>
+      <Button x:Name="btnInputCharsPath" Content="Select" Grid.Column="2" Margin="5"/>
+    </Grid>
+    <Grid DockPanel.Dock="Top" MaxHeight="50">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Label Grid.Column="0" Content="Chars set File Regex Match:" Margin="5" VerticalContentAlignment="Center" />
+      <TextBox x:Name="charsFileMatch" Grid.Column="1" Margin="5"/>
+      <Label Grid.Column="2" Content="Custom Regex" Margin="5" VerticalContentAlignment="Center" />
+      <CheckBox x:Name="togCustomMatch" Grid.Column="3" Margin="5"/>
+    </Grid>
+    <Grid DockPanel.Dock="Top" MaxHeight="50">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Panel DockPanel.Dock="Left" Grid.Column="0"/>
+      <Label Grid.Column="1" Content="Strip Extra Table" Margin="5" VerticalContentAlignment="Center" />
+      <CheckBox x:Name="togStripTable" IsChecked="true" Grid.Column="2" Margin="5"/>
+      <Label Grid.Column="3" Content="Retain Ascii Chars" Margin="5" VerticalContentAlignment="Center" />
+      <CheckBox x:Name="togContatinAscii" IsChecked="true" Grid.Column="4" Margin="5"/>
+      <Button x:Name="btnStart" Content="Start Subset" Grid.Column="5" Margin="5"/>
+    </Grid>
+    <Panel DockPanel.Dock="Bottom"/>
+  </DockPanel>
 </Window>

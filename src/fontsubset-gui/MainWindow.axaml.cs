@@ -1,9 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
-using Subsetter;
+using sfntly.Subsetter;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -109,19 +108,23 @@ public partial class MainWindow : Window
             await box.ShowAsync();
             return;
         }
-        var ex = await SubsetterUtil.StartSubset(inputFont.Text, outputFont.Text, inputCharsPath.Text, charsFileMatch.Text, togContatinAscii.IsChecked.Value, togStripTable.IsChecked.Value);
-        if (ex != null)
+        var result = await SubsetterUtil.StartSubset(inputFont.Text, outputFont.Text, inputCharsPath.Text, charsFileMatch.Text, togContatinAscii.IsChecked ?? false, togStripTable.IsChecked ?? false);
+        if (result.Exception != null)
         {
-            var box = MessageBoxManager.GetMessageBoxStandard("Error", "Subset Failed, Exception:" + ex.ToString(), ButtonEnum.Ok);
+            var box = MessageBoxManager.GetMessageBoxStandard("Error", "Subset Failed, Exception:" + result.Exception.ToString(), ButtonEnum.Ok);
             await box.ShowAsync();
             return;
         }
 
-        var box1 = MessageBoxManager.GetMessageBoxStandard("Success", "Subset Success", ButtonEnum.Ok);
+        var box1 = MessageBoxManager.GetMessageBoxStandard("Success", $"Subset Success\norigin count:{result.OriginCharactersCount}\nafter subset count:{result.SubsetCharactersCount}", ButtonEnum.Ok);
         await box1.ShowAsync();
 
         //打开目录
-        string outputPath = outputFont.Text;
+        string? outputPath = outputFont.Text;
+        if (string.IsNullOrEmpty(outputPath))
+        {
+            return;
+        }
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             using Process fileOpener = new Process();
