@@ -22,7 +22,7 @@ jobs:
         with:
           script-path: build/build.cake
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           path: ./publish/
           name: build_artifacts
