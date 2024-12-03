@@ -21,8 +21,8 @@ jobs:
         uses: cake-build/cake-action@v2
         with:
           script-path: build/build.cake
-      - name: UploadNavMeshExport
-        uses: actions/upload-artifact@v3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
           path: ./publish/
           name: build_artifacts
