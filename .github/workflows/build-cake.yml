@@ -1,0 +1,28 @@
+name: build-cake
+
+on:
+  push:
+    branches: [ "main" ]
+    # branches: [ "**" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macOS-latest]
+    steps:
+      - name: Get the sources
+        uses: actions/checkout@v1
+      - name: Run the build script
+        uses: cake-build/cake-action@v2
+        with:
+          script-path: build/build.cake
+      - name: UploadNavMeshExport
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./publish/
+          name: build_artifacts

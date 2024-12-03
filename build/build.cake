@@ -99,14 +99,14 @@ Task("BuildInitialization")
     CleanDirectories(GetPath(_outputDirectory));
 });
 
-Task("BuildWindows64")
+Task("Build-Windows")
     .WithCriteria(() => _operatingSystem == OperatingSystem.Windows)
     .IsDependentOn("BuildInitialization")
     .Does(() => 
 {
-    var outputDirectory = _outputDirectory + Directory("windows");
+    var outputDirectory = _outputDirectory + Directory("win-x64");
 
-    Information("Build for Windows (64-bit).");
+    Information("Build for Windows x64");
     var settings = GetDefaultDotNetPublishSettings();
     settings.Runtime = "win-x64";
     settings.OutputDirectory = GetPath(outputDirectory);
@@ -134,8 +134,55 @@ Task("BuildWindows64")
 
 });
 
+
+Task("Build-Linux")
+    .WithCriteria(() => _operatingSystem == OperatingSystem.Linux)
+    .IsDependentOn("BuildInitialization")
+    .Does(() => 
+{
+    var outputDirectory = _outputDirectory + Directory("linux-x64");
+
+    Information("Build for linux x64");
+    var settings = GetDefaultDotNetPublishSettings();
+    settings.Runtime = "linux-x64";
+    settings.OutputDirectory = GetPath(outputDirectory);
+    DotNetPublish(GetPath(_srcConsoleDirectory), settings);
+    DotNetPublish(GetPath(_srcGuiDirectory), settings);
+
+
+});
+
+
+Task("Build-MacOS")
+    .WithCriteria(() => _operatingSystem == OperatingSystem.MacOS)
+    .IsDependentOn("BuildInitialization")
+    .Does(() => 
+{
+    var outputDirectory = _outputDirectory + Directory("macos-x64");
+
+    Information("Build for MacOS x64");
+    var settings = GetDefaultDotNetPublishSettings();
+    settings.Runtime = "osx-x64";
+    settings.OutputDirectory = GetPath(outputDirectory);
+    DotNetPublish(GetPath(_srcConsoleDirectory), settings);
+    DotNetPublish(GetPath(_srcGuiDirectory), settings);
+
+    outputDirectory = _outputDirectory + Directory("macos-arm64");
+
+    Information("Build for MacOS arm64");
+    var settingsForArm = GetDefaultDotNetPublishSettings();
+    settingsForArm.Runtime = "osx-arm64";
+    settingsForArm.OutputDirectory = GetPath(outputDirectory);
+    DotNetPublish(GetPath(_srcConsoleDirectory), settingsForArm);
+    DotNetPublish(GetPath(_srcGuiDirectory), settingsForArm);
+
+
+});
+
 Task("Default")
-.IsDependentOn("BuildWindows64")
+.IsDependentOn("Build-Windows")
+.IsDependentOn("Build-Linux")
+.IsDependentOn("Build-MacOS")
 .Does(() => {
    Information("Hello Cake!");
 });

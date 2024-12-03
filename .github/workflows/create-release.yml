@@ -1,0 +1,43 @@
+name: create-release
+
+on: 
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Enter tag name'     
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get artifacts from previous workflow
+        uses: dawidd6/action-download-artifact@v7
+        with:
+          workflow: build-cake.yml
+          name: build_artifacts
+          path: ./build_artifacts
+          # 将 artifacts 打包成 zip 文件
+      - name: Create ZIP package of artifacts
+        run: |
+          mkdir -p ./release
+          # 遍历 build_artifacts 目录下的每个子目录
+          for dir in ./build_artifacts/*; do
+            if [ -d "$dir" ]; then
+              # 获取仓库名和子目录名
+              folder_name=$(basename "$dir")
+              zip_name="${{ github.event.repository.name }}-${folder_name}.zip"
+              # 创建 ZIP 包
+              zip -r ./release/$zip_name $dir
+            fi
+          done
+
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with: # 将下述可执行文件 release 上去
+          tag_name: ${{ github.event.inputs.tag_name }}
+          files: |
+            ./release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
