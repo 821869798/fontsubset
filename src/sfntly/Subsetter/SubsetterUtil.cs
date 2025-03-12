@@ -56,6 +56,12 @@ public static class SubsetterUtil
 
             var sfntInfo = sfntTool.subsetFontFile(inputFile, outFile, 1);
 
+            if (sfntInfo.UnSupportedFont)
+            {
+                result.Exception = new Exception("\nFailed to subset font,only supports TrueType font files.\nPlease use software to convert PostScript fonts to TrueType fonts");
+                return result;
+            }
+
             LocaTable loca = sfntInfo.OriginFont.getTable<LocaTable>(Tag.loca);
             result.OriginCharactersCount = loca.numGlyphs();
             loca = sfntInfo.ModifiedFont.getTable<LocaTable>(Tag.loca);

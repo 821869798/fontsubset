@@ -17,6 +17,7 @@
 using com.google.typography.font.sfntly;
 using com.google.typography.font.sfntly.data;
 using com.google.typography.font.sfntly.table.core;
+using com.google.typography.font.sfntly.table.truetype;
 using com.google.typography.font.tools.conversion.eot;
 using com.google.typography.font.tools.conversion.woff;
 using com.google.typography.font.tools.subsetter;
@@ -132,7 +133,12 @@ public class SfntTool
 
         if (fontFile != null && outputFile != null)
         {
-            tool.subsetFontFile(fontFile, outputFile, nIters);
+            var resultInfo = tool.subsetFontFile(fontFile, outputFile, nIters);
+            if (resultInfo.UnSupportedFont)
+            {
+                Console.WriteLine("Failed to subset font,only supports TrueType font files.\nPlease use software to convert PostScript fonts to TrueType fonts");
+            }
+
         }
         else
         {
@@ -169,7 +175,15 @@ public class SfntTool
             IList<CMapTable.CMapId> cmapIds = new List<CMapTable.CMapId>();
             cmapIds.Add(CMapTable.CMapId.WINDOWS_BMP);
             sfntInfo.OriginFont = font;
-            byte[] newFontData = null;
+
+            LocaTable locaTable = font.getTable<LocaTable>(Tag.loca);
+            GlyphTable glyfTable = font.getTable<GlyphTable>(Tag.glyf);
+            if (locaTable == null || glyfTable == null)
+            {
+                sfntInfo.UnSupportedFont = true;
+                return sfntInfo;
+            }
+
             for (int i = 0; i < nIters; i++)
             {
                 Font newFont = font;

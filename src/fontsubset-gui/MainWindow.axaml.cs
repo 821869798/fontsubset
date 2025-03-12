@@ -76,7 +76,7 @@ public partial class MainWindow : Window
 
     private void CustomMatch_IsCheckedChanged(object sender, RoutedEventArgs e)
     {
-        if (!togCustomMatch.IsChecked.Value)
+        if (togCustomMatch.IsChecked.HasValue && !togCustomMatch.IsChecked.Value)
         {
             charsFileMatch.Text = @".+\.txt|.+\.lua|.+\.asset";
             charsFileMatch.IsEnabled = false;
@@ -109,6 +109,9 @@ public partial class MainWindow : Window
             return;
         }
         var result = await SubsetterUtil.StartSubset(inputFont.Text, outputFont.Text, inputCharsPath.Text, charsFileMatch.Text, togContatinAscii.IsChecked ?? false, togStripTable.IsChecked ?? false);
+
+
+
         if (result.Exception != null)
         {
             var box = MessageBoxManager.GetMessageBoxStandard("Error", "Subset Failed, Exception:" + result.Exception.ToString(), ButtonEnum.Ok);
