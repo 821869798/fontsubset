@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -161,7 +161,7 @@ jobs:
 
     steps:
       - name: Check out sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -205,8 +205,8 @@ jobs:
         shell: bash
         run: |
           cargo build --locked --release --target "${{ matrix.target }}" \
-            --bin fontsubset-console \
-            --bin fontsubset-gui
+            --package fontsubset-console \
+            --package fontsubset-gui
 
       - name: Package Unix release
         if: matrix.kind == 'unix'
