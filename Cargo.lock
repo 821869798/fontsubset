@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "fontsubset-console"
-version = "0.1.0"
+version = "0.4.0-alpha.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -1929,7 +1929,7 @@ dependencies = [
 
 [[package]]
 name = "fontsubset-core"
-version = "0.1.0"
+version = "0.4.0-alpha.1"
 dependencies = [
  "anyhow",
  "harfbuzz-subset-sys",
@@ -1940,7 +1940,7 @@ dependencies = [
 
 [[package]]
 name = "fontsubset-gui"
-version = "0.1.0"
+version = "0.4.0-alpha.1"
 dependencies = [
  "fontsubset-core",
  "gpui",
@@ -2714,7 +2714,7 @@ dependencies = [
 
 [[package]]
 name = "harfbuzz-subset-sys"
-version = "0.1.0"
+version = "0.4.0-alpha.1"
 dependencies = [
  "cc",
 ]
