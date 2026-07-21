@@ -1,0 +1,13 @@
+[package]
+name = "fontsubset-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared HarfBuzz-based font subsetting engine"
+
+[dependencies]
+anyhow.workspace = true
+harfbuzz-subset-sys = { path = "../harfbuzz-subset-sys" }
+regex.workspace = true
+ttf-parser.workspace = true
+walkdir.workspace = true

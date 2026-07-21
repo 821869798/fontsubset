@@ -1,0 +1,27 @@
+[workspace]
+members = [
+    "src/harfbuzz-subset-sys",
+    "src/fontsubset-core",
+    "src/fontsubset-console",
+    "src/fontsubset-gui",
+]
+default-members = [
+    "src/fontsubset-core",
+    "src/fontsubset-console",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+anyhow = "1.0"
+cc = "1"
+clap = { version = "4.5", features = ["derive"] }
+parking_lot = "0.12"
+regex = "1.11"
+rfd = "0.17"
+ttf-parser = "0.25"
+walkdir = "2.5"

@@ -1,0 +1,356 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install Linux dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            lld \
+            libasound2-dev \
+            libfontconfig-dev \
+            libfreetype6-dev \
+            libglib2.0-dev \
+            libssl-dev \
+            libva-dev \
+            libvulkan1 \
+            libwayland-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
+
+      - name: Verify tag matches workspace version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          cargo_version="$(cargo metadata --locked --no-deps --format-version 1 | python3 -c 'import json, sys; data=json.load(sys.stdin); print(next(p["version"] for p in data["packages"] if p["name"] == "fontsubset-core"))')"
+          echo "tag version: ${tag_version}"
+          echo "Cargo version: ${cargo_version}"
+          test "${tag_version}" = "${cargo_version}"
+          if [[ "${tag_version}" == *-* ]]; then
+            prerelease=true
+          else
+            prerelease=false
+          fi
+          echo "version=${tag_version}" >> "${GITHUB_OUTPUT}"
+          echo "prerelease=${prerelease}" >> "${GITHUB_OUTPUT}"
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Validate workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          cargo check --locked --workspace
+          cargo test --locked --workspace
+          cargo clippy --locked --workspace --all-targets -- -D warnings
+
+  create-release:
+    name: Create draft release
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create release if needed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists; assets will be replaced."
+            gh release edit "${GITHUB_REF_NAME}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --prerelease="${PRERELEASE}"
+          else
+            release_args=(
+              --repo "${GITHUB_REPOSITORY}"
+              --verify-tag
+              --draft
+              --generate-notes
+              --title "FontSubset ${GITHUB_REF_NAME}"
+            )
+            if [[ "${PRERELEASE}" == "true" ]]; then
+              release_args+=(--prerelease)
+            fi
+            gh release create "${GITHUB_REF_NAME}" "${release_args[@]}"
+          fi
+
+  binaries:
+    name: Build ${{ matrix.target }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            gui_asset: fontsubset-gui-windows-x64.zip
+            console_asset: fontsubset-console-windows-x64.zip
+            kind: windows
+            console: fontsubset-console.exe
+            gui: fontsubset-gui.exe
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            gui_asset: fontsubset-gui-linux-x64.tar.gz
+            console_asset: fontsubset-console-linux-x64.tar.gz
+            kind: unix
+            console: fontsubset-console
+            gui: fontsubset-gui
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            gui_asset: fontsubset-gui-linux-arm64.tar.gz
+            console_asset: fontsubset-console-linux-arm64.tar.gz
+            kind: unix
+            console: fontsubset-console
+            gui: fontsubset-gui
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            gui_asset: fontsubset-gui-macos-arm64.zip
+            console_asset: fontsubset-console-macos-arm64.tar.gz
+            kind: macos
+            console: fontsubset-console
+            gui: fontsubset-gui
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            lld \
+            libasound2-dev \
+            libfontconfig-dev \
+            libfreetype6-dev \
+            libglib2.0-dev \
+            libssl-dev \
+            libva-dev \
+            libvulkan1 \
+            libwayland-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          cargo build --locked --release --target "${{ matrix.target }}" \
+            --bin fontsubset-console \
+            --bin fontsubset-gui
+
+      - name: Package Unix release
+        if: matrix.kind == 'unix'
+        env:
+          GUI_ASSET: ${{ matrix.gui_asset }}
+          CONSOLE_ASSET: ${{ matrix.console_asset }}
+          TARGET: ${{ matrix.target }}
+          CONSOLE: ${{ matrix.console }}
+          GUI: ${{ matrix.gui }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in gui console; do
+            package_dir="staging/fontsubset-${kind}"
+            mkdir -p "${package_dir}"
+            cp README.md README.en.md "${package_dir}/"
+            cp vendor/harfbuzz/COPYING "${package_dir}/HARFBUZZ-LICENSE.txt"
+            if [[ -f LICENSE ]]; then cp LICENSE "${package_dir}/"; fi
+          done
+
+          cp "target/${TARGET}/release/${GUI}" "staging/fontsubset-gui/${GUI}"
+          cp "target/${TARGET}/release/${CONSOLE}" "staging/fontsubset-console/${CONSOLE}"
+          chmod 755 "staging/fontsubset-gui/${GUI}" "staging/fontsubset-console/${CONSOLE}"
+
+          tar -czf "${GUI_ASSET}" -C staging fontsubset-gui
+          tar -czf "${CONSOLE_ASSET}" -C staging fontsubset-console
+          sha256sum "${GUI_ASSET}" > "${GUI_ASSET}.sha256"
+          sha256sum "${CONSOLE_ASSET}" > "${CONSOLE_ASSET}.sha256"
+
+      - name: Package macOS application
+        if: matrix.kind == 'macos'
+        env:
+          GUI_ASSET: ${{ matrix.gui_asset }}
+          CONSOLE_ASSET: ${{ matrix.console_asset }}
+          TARGET: ${{ matrix.target }}
+          CONSOLE: ${{ matrix.console }}
+          GUI: ${{ matrix.gui }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          gui_dir="staging/fontsubset-gui"
+          console_dir="staging/fontsubset-console"
+          app_dir="${gui_dir}/FontSubset.app"
+
+          mkdir -p "${app_dir}/Contents/MacOS" "${app_dir}/Contents/Resources"
+          mkdir -p "${console_dir}"
+          cp "target/${TARGET}/release/${GUI}" "${app_dir}/Contents/MacOS/FontSubset"
+          cp packaging/macos/Info.plist "${app_dir}/Contents/Info.plist"
+          cp packaging/macos/FontSubset.icns "${app_dir}/Contents/Resources/FontSubset.icns"
+          chmod 755 "${app_dir}/Contents/MacOS/FontSubset"
+
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${version}" "${app_dir}/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${version}" "${app_dir}/Contents/Info.plist"
+
+          # Ad-hoc signing validates the bundle structure. Developer ID signing
+          # and notarization can replace this step when Apple credentials exist.
+          codesign --force --deep --sign - "${app_dir}"
+          codesign --verify --deep --strict "${app_dir}"
+
+          cp "target/${TARGET}/release/${CONSOLE}" "${console_dir}/${CONSOLE}"
+          chmod 755 "${console_dir}/${CONSOLE}"
+          for package_dir in "${gui_dir}" "${console_dir}"; do
+            cp README.md README.en.md "${package_dir}/"
+            cp vendor/harfbuzz/COPYING "${package_dir}/HARFBUZZ-LICENSE.txt"
+            if [[ -f LICENSE ]]; then cp LICENSE "${package_dir}/"; fi
+          done
+
+          ditto -c -k --sequesterRsrc --keepParent "${gui_dir}" "${GUI_ASSET}"
+          tar -czf "${CONSOLE_ASSET}" -C staging fontsubset-console
+          shasum -a 256 "${GUI_ASSET}" > "${GUI_ASSET}.sha256"
+          shasum -a 256 "${CONSOLE_ASSET}" > "${CONSOLE_ASSET}.sha256"
+
+      - name: Package Windows release
+        if: matrix.kind == 'windows'
+        env:
+          GUI_ASSET: ${{ matrix.gui_asset }}
+          CONSOLE_ASSET: ${{ matrix.console_asset }}
+          TARGET: ${{ matrix.target }}
+          CONSOLE: ${{ matrix.console }}
+          GUI: ${{ matrix.gui }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          foreach ($kind in @("gui", "console")) {
+            $packageDir = "staging/fontsubset-$kind"
+            New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+            Copy-Item README.md,README.en.md $packageDir
+            Copy-Item vendor/harfbuzz/COPYING "$packageDir/HARFBUZZ-LICENSE.txt"
+            if (Test-Path LICENSE) { Copy-Item LICENSE $packageDir }
+          }
+
+          Copy-Item "target/$env:TARGET/release/$env:GUI" "staging/fontsubset-gui/$env:GUI"
+          Copy-Item "target/$env:TARGET/release/$env:CONSOLE" "staging/fontsubset-console/$env:CONSOLE"
+          Compress-Archive -Path staging/fontsubset-gui/* -DestinationPath $env:GUI_ASSET -Force
+          Compress-Archive -Path staging/fontsubset-console/* -DestinationPath $env:CONSOLE_ASSET -Force
+
+          foreach ($asset in @($env:GUI_ASSET, $env:CONSOLE_ASSET)) {
+            $hash = (Get-FileHash -Algorithm SHA256 $asset).Hash.ToLowerInvariant()
+            "$hash  $asset" | Out-File "$asset.sha256" -Encoding ascii
+          }
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_ASSET: ${{ matrix.gui_asset }}
+          CONSOLE_ASSET: ${{ matrix.console_asset }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "${GITHUB_REF_NAME}" \
+            "${GUI_ASSET}" "${GUI_ASSET}.sha256" \
+            "${CONSOLE_ASSET}" "${CONSOLE_ASSET}.sha256" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
+
+  publish-release:
+    name: Publish GitHub release
+    needs:
+      - validate
+      - binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            gh release edit "${GITHUB_REF_NAME}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft=false \
+              --prerelease \
+              --latest=false
+          else
+            gh release edit "${GITHUB_REF_NAME}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --draft=false \
+              --prerelease=false \
+              --latest
+          fi

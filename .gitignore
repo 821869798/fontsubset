@@ -43,10 +43,30 @@ publish/
 [Tt]emp/
 # msbuild binary output folder
 $MsBuildProjectDirectory$/bin/
-.vs
+.vs/
 table-builder.sln
 work_temp
 publish-console
 publish-gui
-.idea
-.vscode
+.idea/
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Rust build and profiling output
+/target/
+**/*.rs.bk
+*.profraw
+
+# Locally packaged release artifacts
+/fontsubset-*.zip
+/fontsubset-*.tar.gz
+/fontsubset-*.sha256

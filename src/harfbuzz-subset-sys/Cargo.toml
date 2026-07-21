@@ -1,0 +1,12 @@
+[package]
+name = "harfbuzz-subset-sys"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Statically linked HarfBuzz Subset FFI for FontSubset"
+links = "fontsubset_harfbuzz_subset"
+build = "build.rs"
+
+[build-dependencies]
+cc.workspace = true
+

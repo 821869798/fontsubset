@@ -1,0 +1,16 @@
+[package]
+name = "fontsubset-console"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command-line frontend for fontsubset-core"
+
+[[bin]]
+name = "fontsubset-console"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+fontsubset-core = { path = "../fontsubset-core" }
+
