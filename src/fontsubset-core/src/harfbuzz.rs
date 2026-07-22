@@ -26,7 +26,6 @@ impl HarfBuzz {
         font: &[u8],
         characters: impl IntoIterator<Item = char>,
         strip_hints: bool,
-        drop_layout: bool,
     ) -> Result<Vec<u8>> {
         let font_len = u32::try_from(font.len()).context("input font is larger than 4 GiB")?;
         let blob = OwnedHandle::new(
@@ -67,19 +66,6 @@ impl HarfBuzz {
             let flags = unsafe { hb::hb_subset_input_get_flags(input.ptr()) };
             unsafe {
                 hb::hb_subset_input_set_flags(input.ptr(), flags | hb::HB_SUBSET_FLAGS_NO_HINTING);
-            }
-        }
-
-        if drop_layout {
-            let drop_set =
-                unsafe { hb::hb_subset_input_set(input.ptr(), hb::HB_SUBSET_SETS_DROP_TABLE_TAG) };
-            if drop_set.is_null() {
-                bail!("HarfBuzz failed to provide the drop-table set");
-            }
-            for tag in [*b"GDEF", *b"GPOS", *b"GSUB"] {
-                unsafe {
-                    hb::hb_set_add(drop_set, u32::from_be_bytes(tag));
-                }
             }
         }
 

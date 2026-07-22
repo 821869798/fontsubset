@@ -32,13 +32,9 @@ struct Cli {
     #[arg(short = 'a', long = "ascii")]
     retain_ascii: bool,
 
-    /// Remove TrueType hint instructions and hint tables.
+    /// Remove TrueType and CFF/CFF2 hinting instructions.
     #[arg(short = 's', long = "strip-hints", visible_alias = "strip")]
     strip_hints: bool,
-
-    /// Drop GSUB, GPOS, and GDEF. This can break shaping and ligatures.
-    #[arg(long)]
-    drop_layout: bool,
 
     /// Source .ttf or .otf font.
     #[arg(value_name = "INPUT_FONT")]
@@ -68,7 +64,6 @@ fn run(cli: Cli) -> Result<()> {
         literal_text: cli.text,
         retain_ascii: cli.retain_ascii,
         strip_hints: cli.strip_hints,
-        drop_layout: cli.drop_layout,
     })?;
 
     println!("Subset succeeded");

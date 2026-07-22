@@ -7,7 +7,6 @@ pub type hb_destroy_func_t = unsafe extern "C" fn(hb_ptr_t);
 
 pub const HB_MEMORY_MODE_DUPLICATE: u32 = 0;
 pub const HB_SUBSET_FLAGS_NO_HINTING: u32 = 0x0000_0001;
-pub const HB_SUBSET_SETS_DROP_TABLE_TAG: u32 = 3;
 
 unsafe extern "C" {
     pub fn hb_blob_create_or_fail(
@@ -29,7 +28,6 @@ unsafe extern "C" {
     pub fn hb_subset_input_unicode_set(input: hb_ptr_t) -> hb_ptr_t;
     pub fn hb_subset_input_get_flags(input: hb_ptr_t) -> u32;
     pub fn hb_subset_input_set_flags(input: hb_ptr_t, value: u32);
-    pub fn hb_subset_input_set(input: hb_ptr_t, set_type: u32) -> hb_ptr_t;
     pub fn hb_subset_or_fail(source: hb_ptr_t, input: hb_ptr_t) -> hb_ptr_t;
 
     pub fn hb_set_add(set: hb_ptr_t, codepoint: u32);

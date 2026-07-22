@@ -4,12 +4,22 @@
 mod app;
 mod i18n;
 
+use std::{
+    backtrace::Backtrace,
+    fs::OpenOptions,
+    io::Write as _,
+    panic,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
 use app::FontSubsetApp;
 use gpui::*;
 use gpui_component::*;
 use gpui_component_assets::Assets;
 
 fn main() {
+    install_panic_log();
+
     let app = gpui_platform::application().with_assets(Assets);
 
     app.run(move |cx| {
@@ -34,4 +44,19 @@ fn main() {
         })
         .detach();
     });
+}
+
+fn install_panic_log() {
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |duration| duration.as_secs());
+        let path = std::env::temp_dir().join("fontsubset-gui-crash.log");
+        if let Ok(mut log) = OpenOptions::new().create(true).append(true).open(path) {
+            let backtrace = Backtrace::force_capture();
+            let _ = writeln!(log, "[{timestamp}] {info}\n{backtrace}");
+        }
+        default_hook(info);
+    }));
 }

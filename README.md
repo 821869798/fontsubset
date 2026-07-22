@@ -13,11 +13,11 @@ PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
 - 支持 TrueType `glyf` 轮廓
 - 支持 PostScript CFF、CID-keyed CFF 和可变 CFF2 轮廓
 - 递归扫描字符集目录，并按正则表达式匹配文本文件
-- 可保留可见 ASCII 字符，可移除 TrueType Hinting
+- 可保留可见 ASCII 字符，可移除 TrueType 和 CFF/CFF2 Hinting
 - 默认保留 `GSUB`、`GPOS` 和 `GDEF` 等复杂布局表
 - 严格验证输出 cmap 只包含源字体支持的目标字符
 - GUI 和 console 共用同一套 `fontsubset-core` 实现
-- GUI 支持中文和英文实时切换，耗时裁剪在后台线程执行
+- GUI 支持拖入字体、中文和英文实时切换，耗时裁剪在后台线程执行
 
 独立 Type 1 `.pfa` 和 `.pfb` 文件不是 OpenType 字体，当前不直接接受。
 请先转换为 OpenType CFF。OpenType CFF/CFF2 会直接裁剪，不需要转成 TTF。
@@ -28,14 +28,19 @@ PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
 
 ## GUI 使用
 
-1. 选择输入 `.ttf` 或 `.otf` 字体。
-2. 选择输出字体路径。
-3. 选择包含字符集文件的目录。
-4. 按需启用自定义正则、保留 ASCII、移除 Hinting 或删除布局表。
-5. 点击“开始裁剪”。
+1. 将 `.ttf` 或 `.otf` 拖入窗口，也可以点击“选择”指定输入字体。
+2. 输入字体确定后会自动建议输出路径，也可以手动修改。
+3. 字符集文件目录是可选项。选择后会递归读取其中匹配正则表达式的文件。
+4. 如果不选择字符集目录，必须勾选“保留 ASCII 字符”；如果只想保留目录文件中出现的字符，请取消该选项。
+5. 按需设置自定义正则或移除 Hinting，然后点击“开始裁剪”。
 
-标题区的 **中 / EN** 按钮可以切换界面语言。布局表默认保留；只有明确启用
-“删除布局表”后才会移除 `GSUB`、`GPOS` 和 `GDEF`。
+标题区的 **中 / EN** 按钮可以切换界面语言。`GSUB`、`GPOS` 和 `GDEF`
+等布局表始终保留，以避免破坏字体排版和复杂文字塑形。
+
+### 选项说明
+
+- **保留 ASCII 字符**：无论字符集文件中是否出现，都会额外保留 U+0020 至 U+007E。适合英文、数字和常用符号；想严格按字符集文件裁剪时应取消勾选。
+- **移除 Hinting**：删除用于小字号像素对齐的 TrueType 指令以及 CFF/CFF2 hint 信息，可以进一步减小字体，但旧版 Windows 或低分辨率下的小字号可能变模糊、笔画不均。现代高 DPI 屏幕、macOS 和较大字号通常影响较小。GUI 默认不勾选；只有明确优先考虑体积且能接受显示差异时再启用。
 
 ## Console 使用
 
@@ -52,7 +57,7 @@ fontsubset-console --text "你好，世界" input.otf output.otf
 ```
 
 兼容旧参数名称 `--charsfile` 和 `--strip`。使用 `-s` 或 `--strip-hints`
-移除 TrueType Hinting；使用 `--drop-layout` 主动删除布局表。
+移除 TrueType 和 CFF/CFF2 Hinting。布局表始终保留。
 
 ## 自包含 HarfBuzz
 

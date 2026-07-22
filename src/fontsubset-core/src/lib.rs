@@ -23,7 +23,6 @@ pub struct SubsetRequest {
     pub literal_text: Option<String>,
     pub retain_ascii: bool,
     pub strip_hints: bool,
-    pub drop_layout: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -123,7 +122,6 @@ pub fn subset(request: &SubsetRequest) -> Result<SubsetResult> {
             &input_bytes,
             collected.characters.iter().copied(),
             request.strip_hints,
-            request.drop_layout,
         )
         .context("font subsetting failed")?;
 

@@ -14,13 +14,13 @@ outlines are subset directly and are never converted to TrueType.
 - Supports TrueType `glyf` outlines
 - Supports PostScript CFF, CID-keyed CFF, and variable CFF2 outlines
 - Recursively scans character-source directories using a configurable regex
-- Can retain visible ASCII characters and remove TrueType hinting
+- Can retain visible ASCII characters and remove TrueType and CFF/CFF2 hinting
 - Preserves complex layout tables such as `GSUB`, `GPOS`, and `GDEF` by default
 - Strictly verifies that the output cmap contains only requested characters
   supported by the source font
 - The GUI and console share the same `fontsubset-core` implementation
-- The GUI supports live Chinese/English switching and runs subsetting on a
-  background thread
+- The GUI accepts dropped fonts, supports live Chinese/English switching, and
+  runs subsetting on a background thread
 
 Standalone Type 1 `.pfa` and `.pfb` files are not OpenType fonts and are not
 accepted directly. Convert them to OpenType CFF first. OpenType CFF/CFF2 fonts
@@ -32,14 +32,19 @@ are subset directly without conversion to TTF.
 
 ## GUI Usage
 
-1. Select an input `.ttf` or `.otf` font.
-2. Select the output font path.
-3. Select a directory containing character-source files.
-4. Configure custom regex, ASCII retention, hint removal, or layout removal.
-5. Click **Start Subset**.
+1. Drop a `.ttf` or `.otf` anywhere in the window, or select it with the input button.
+2. An output path is suggested automatically and can be changed manually.
+3. The character-source directory is optional. When selected, matching files are read recursively.
+4. If no character directory is selected, **Retain ASCII Chars** must be enabled. Disable it to retain only characters found in the directory files.
+5. Configure the regex or hint removal as needed, then click **Start Subset**.
 
-Use **中 / EN** in the header to switch languages. Layout tables remain enabled
-unless **Drop Layout Tables** is explicitly selected.
+Use **中 / EN** in the header to switch languages. Layout tables such as
+`GSUB`, `GPOS`, and `GDEF` are always preserved to avoid breaking shaping.
+
+### Option Details
+
+- **Retain ASCII Chars** additionally keeps U+0020 through U+007E even when those characters are absent from the source files. Disable it for a strict source-file subset.
+- **Strip Hinting** removes TrueType instructions and CFF/CFF2 hints used to align small text to the pixel grid. It can reduce size further, but small text may become blurrier or less even on older Windows systems and low-resolution displays. Modern high-DPI displays, macOS, and larger text are usually less affected. The GUI leaves this disabled by default; enable it only when size is more important than low-resolution rendering fidelity.
 
 ## Console Usage
 
@@ -56,8 +61,8 @@ fontsubset-console --text "Hello, world" input.otf output.otf
 ```
 
 The legacy option names `--charsfile` and `--strip` remain available. Use `-s`
-or `--strip-hints` to remove TrueType hinting, and `--drop-layout` to explicitly
-remove layout tables.
+or `--strip-hints` to remove TrueType and CFF/CFF2 hinting. Layout tables are
+always preserved.
 
 ## Self-contained HarfBuzz
 

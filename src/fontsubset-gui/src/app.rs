@@ -14,6 +14,7 @@ use gpui_component::{
     checkbox::Checkbox,
     h_flex,
     input::{Input, InputState},
+    popover::Popover,
     v_flex, *,
 };
 use parking_lot::Mutex;
@@ -32,7 +33,7 @@ pub struct FontSubsetApp {
     custom_regex: bool,
     strip_hints: bool,
     retain_ascii: bool,
-    drop_layout: bool,
+    dialog_open: bool,
     running: bool,
     locale: Locale,
     status: SharedString,
@@ -99,9 +100,9 @@ impl FontSubsetApp {
             chars_path,
             file_regex,
             custom_regex: false,
-            strip_hints: true,
+            strip_hints: false,
             retain_ascii: true,
-            drop_layout: false,
+            dialog_open: false,
             running: false,
             locale,
             status: Msg::Ready.get(locale).into(),
@@ -110,16 +111,65 @@ impl FontSubsetApp {
         }
     }
 
-    fn select_input_font(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn select_input_font(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.dialog_open {
+            return;
+        }
+
         let locale = self.locale;
-        let Some(path) = rfd::FileDialog::new()
+        let dialog = rfd::AsyncFileDialog::new()
             .set_title(Msg::SelectSourceDialog.get(locale))
             .add_filter(Msg::FontFiles.get(locale), &["ttf", "otf"])
-            .pick_file()
+            .pick_file();
+
+        self.dialog_open = true;
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let path = dialog.await.map(|file| file.path().to_path_buf());
+            let _ = this.update_in(cx, |this, window, cx| {
+                this.dialog_open = false;
+                if let Some(path) = path {
+                    this.set_source_font(path, window, cx);
+                    this.set_status(
+                        Msg::SourceSelected.get(this.locale),
+                        StatusKind::Neutral,
+                        cx,
+                    );
+                } else {
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn handle_dropped_paths(
+        &mut self,
+        paths: &ExternalPaths,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let locale = self.locale;
+        if self.running {
+            self.set_status(Msg::DropWhileRunning.get(locale), StatusKind::Error, cx);
+            return;
+        }
+
+        let Some(path) = paths
+            .paths()
+            .iter()
+            .find(|path| path.is_file() && is_supported_font_path(path))
+            .cloned()
         else {
+            self.set_status(Msg::DropFontError.get(locale), StatusKind::Error, cx);
             return;
         };
 
+        self.set_source_font(path, window, cx);
+        self.set_status(Msg::FontDropped.get(locale), StatusKind::Neutral, cx);
+    }
+
+    fn set_source_font(&self, path: PathBuf, window: &mut Window, cx: &mut Context<Self>) {
         self.set_input_value(&self.input_font, path.display().to_string(), window, cx);
         if self.output_font.read(cx).value().trim().is_empty() {
             let suggested = suggested_output_path(&path);
@@ -130,13 +180,16 @@ impl FontSubsetApp {
                 cx,
             );
         }
-        self.set_status(Msg::SourceSelected.get(locale), StatusKind::Neutral, cx);
     }
 
-    fn select_output_font(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn select_output_font(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.dialog_open {
+            return;
+        }
+
         let locale = self.locale;
         let input = PathBuf::from(self.input_font.read(cx).value().as_ref());
-        let mut dialog = rfd::FileDialog::new()
+        let mut dialog = rfd::AsyncFileDialog::new()
             .set_title(Msg::SaveOutputDialog.get(locale))
             .add_filter(Msg::FontFiles.get(locale), &["ttf", "otf"]);
         if let Some(parent) = input.parent().filter(|path| path.is_dir()) {
@@ -146,21 +199,53 @@ impl FontSubsetApp {
             dialog = dialog.set_file_name(name.to_string_lossy());
         }
 
-        if let Some(path) = dialog.save_file() {
-            self.set_input_value(&self.output_font, path.display().to_string(), window, cx);
-            self.set_status(Msg::OutputSelected.get(locale), StatusKind::Neutral, cx);
-        }
+        let dialog = dialog.save_file();
+        self.dialog_open = true;
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let path = dialog.await.map(|file| file.path().to_path_buf());
+            let _ = this.update_in(cx, |this, window, cx| {
+                this.dialog_open = false;
+                if let Some(path) = path {
+                    this.set_input_value(&this.output_font, path.display().to_string(), window, cx);
+                    this.set_status(
+                        Msg::OutputSelected.get(this.locale),
+                        StatusKind::Neutral,
+                        cx,
+                    );
+                } else {
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
     }
 
-    fn select_chars_path(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let locale = self.locale;
-        if let Some(path) = rfd::FileDialog::new()
-            .set_title(Msg::SelectCharsDialog.get(locale))
-            .pick_folder()
-        {
-            self.set_input_value(&self.chars_path, path.display().to_string(), window, cx);
-            self.set_status(Msg::CharsSelected.get(locale), StatusKind::Neutral, cx);
+    fn select_chars_path(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        if self.dialog_open {
+            return;
         }
+
+        let locale = self.locale;
+        let dialog = rfd::AsyncFileDialog::new()
+            .set_title(Msg::SelectCharsDialog.get(locale))
+            .pick_folder();
+
+        self.dialog_open = true;
+        cx.notify();
+        cx.spawn(async move |this, cx| {
+            let path = dialog.await.map(|folder| folder.path().to_path_buf());
+            let _ = this.update_in(cx, |this, window, cx| {
+                this.dialog_open = false;
+                if let Some(path) = path {
+                    this.set_input_value(&this.chars_path, path.display().to_string(), window, cx);
+                    this.set_status(Msg::CharsSelected.get(this.locale), StatusKind::Neutral, cx);
+                } else {
+                    cx.notify();
+                }
+            });
+        })
+        .detach();
     }
 
     fn set_locale(&mut self, locale: Locale, window: &mut Window, cx: &mut Context<Self>) {
@@ -226,7 +311,6 @@ impl FontSubsetApp {
             literal_text: None,
             retain_ascii: self.retain_ascii,
             strip_hints: self.strip_hints,
-            drop_layout: self.drop_layout,
         };
         let inbox = Arc::clone(&self.inbox);
         self.running = true;
@@ -284,14 +368,14 @@ impl FontSubsetApp {
                 div()
                     .w(input_width)
                     .flex_none()
-                    .child(Input::new(input).disabled(self.running)),
+                    .child(Input::new(input).disabled(self.running || self.dialog_open)),
             )
             .child(
                 Button::new(button_id)
                     .flex_none()
                     .outline()
                     .label(Msg::Select.get(self.locale))
-                    .disabled(self.running)
+                    .disabled(self.running || self.dialog_open)
                     .on_click(cx.listener(move |this, _, window, cx| select(this, window, cx))),
             )
             .into_any_element()
@@ -315,19 +399,40 @@ impl FontSubsetApp {
                             .text_sm()
                             .child(Msg::FileRegexMatch.get(locale)),
                     )
-                    .child(div().w(regex_width).flex_none().child(
-                        Input::new(&self.file_regex).disabled(self.running || !self.custom_regex),
-                    ))
                     .child(
-                        Checkbox::new("custom-regex")
+                        div().w(regex_width).flex_none().child(
+                            Input::new(&self.file_regex)
+                                .disabled(self.running || self.dialog_open || !self.custom_regex),
+                        ),
+                    )
+                    .child(
+                        h_flex()
                             .flex_none()
-                            .label(Msg::CustomRegex.get(locale))
-                            .checked(self.custom_regex)
-                            .disabled(self.running)
-                            .on_click(cx.listener(|this, checked, _window, cx| {
-                                this.custom_regex = *checked;
-                                cx.notify();
-                            })),
+                            .gap_1()
+                            .items_center()
+                            .child(
+                                Checkbox::new("custom-regex")
+                                    .flex_none()
+                                    .items_center()
+                                    .aria_label(Msg::CustomRegex.get(locale))
+                                    .child(
+                                        div()
+                                            .line_height(relative(1.25))
+                                            .pb(px(1.))
+                                            .child(Msg::CustomRegex.get(locale)),
+                                    )
+                                    .checked(self.custom_regex)
+                                    .disabled(self.running || self.dialog_open)
+                                    .on_click(cx.listener(|this, checked, _window, cx| {
+                                        this.custom_regex = *checked;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(self.render_option_help(
+                                "custom-regex-help",
+                                Msg::CustomRegex,
+                                Msg::CustomRegexHelp,
+                            )),
                     ),
             )
             .child(
@@ -337,34 +442,60 @@ impl FontSubsetApp {
                     .items_center()
                     .flex_wrap()
                     .child(
-                        Checkbox::new("strip-hints")
-                            .label(Msg::StripHinting.get(locale))
-                            .checked(self.strip_hints)
-                            .disabled(self.running)
-                            .on_click(cx.listener(|this, checked, _window, cx| {
-                                this.strip_hints = *checked;
-                                cx.notify();
-                            })),
+                        h_flex()
+                            .flex_none()
+                            .gap_1()
+                            .items_center()
+                            .child(
+                                Checkbox::new("strip-hints")
+                                    .items_center()
+                                    .aria_label(Msg::StripHinting.get(locale))
+                                    .child(
+                                        div()
+                                            .line_height(relative(1.25))
+                                            .pb(px(1.))
+                                            .child(Msg::StripHinting.get(locale)),
+                                    )
+                                    .checked(self.strip_hints)
+                                    .disabled(self.running || self.dialog_open)
+                                    .on_click(cx.listener(|this, checked, _window, cx| {
+                                        this.strip_hints = *checked;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(self.render_option_help(
+                                "strip-hints-help",
+                                Msg::StripHinting,
+                                Msg::StripHintingHelp,
+                            )),
                     )
                     .child(
-                        Checkbox::new("retain-ascii")
-                            .label(Msg::RetainAscii.get(locale))
-                            .checked(self.retain_ascii)
-                            .disabled(self.running)
-                            .on_click(cx.listener(|this, checked, _window, cx| {
-                                this.retain_ascii = *checked;
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Checkbox::new("drop-layout")
-                            .label(Msg::DropLayout.get(locale))
-                            .checked(self.drop_layout)
-                            .disabled(self.running)
-                            .on_click(cx.listener(|this, checked, _window, cx| {
-                                this.drop_layout = *checked;
-                                cx.notify();
-                            })),
+                        h_flex()
+                            .flex_none()
+                            .gap_1()
+                            .items_center()
+                            .child(
+                                Checkbox::new("retain-ascii")
+                                    .items_center()
+                                    .aria_label(Msg::RetainAscii.get(locale))
+                                    .child(
+                                        div()
+                                            .line_height(relative(1.25))
+                                            .pb(px(1.))
+                                            .child(Msg::RetainAscii.get(locale)),
+                                    )
+                                    .checked(self.retain_ascii)
+                                    .disabled(self.running || self.dialog_open)
+                                    .on_click(cx.listener(|this, checked, _window, cx| {
+                                        this.retain_ascii = *checked;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(self.render_option_help(
+                                "retain-ascii-help",
+                                Msg::RetainAscii,
+                                Msg::RetainAsciiHelp,
+                            )),
                     )
                     .child(
                         Button::new("start-subset")
@@ -374,10 +505,45 @@ impl FontSubsetApp {
                             } else {
                                 Msg::StartSubset.get(locale)
                             })
-                            .disabled(self.running)
+                            .disabled(self.running || self.dialog_open)
                             .on_click(cx.listener(|this, _, _window, cx| this.start_subset(cx))),
                     ),
             )
+            .into_any_element()
+    }
+
+    fn render_option_help(&self, id: &'static str, title: Msg, description: Msg) -> AnyElement {
+        let locale = self.locale;
+        let title = title.get(locale);
+        let description = description.get(locale);
+        let accessible_label = format!("{}: {title}", Msg::ShowOptionHelp.get(locale));
+
+        Popover::new(id)
+            .anchor(Anchor::TopRight)
+            .w(px(320.))
+            .trigger(
+                Button::new(format!("{id}-trigger"))
+                    .outline()
+                    .xsmall()
+                    .compact()
+                    .rounded(px(999.))
+                    .size_5()
+                    .tooltip(accessible_label)
+                    .label("!"),
+            )
+            .content(move |_, _, cx| {
+                v_flex()
+                    .w_full()
+                    .gap_2()
+                    .child(div().font_semibold().child(title))
+                    .child(
+                        div()
+                            .text_sm()
+                            .line_height(relative(1.45))
+                            .text_color(cx.theme().muted_foreground)
+                            .child(description),
+                    )
+            })
             .into_any_element()
     }
 }
@@ -400,6 +566,9 @@ impl Render for FontSubsetApp {
             .size_full()
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
+            .on_drop(cx.listener(|this, paths: &ExternalPaths, window, cx| {
+                this.handle_dropped_paths(paths, window, cx);
+            }))
             .child(
                 h_flex()
                     .w_full()
@@ -432,7 +601,7 @@ impl Render for FontSubsetApp {
                             .flex_none()
                             .outline()
                             .label(Msg::LanguageSwitch.get(locale))
-                            .disabled(self.running)
+                            .disabled(self.running || self.dialog_open)
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.set_locale(this.locale.toggle(), window, cx);
                             })),
@@ -502,6 +671,12 @@ fn suggested_output_path(input: &Path) -> PathBuf {
         .and_then(|value| value.to_str())
         .unwrap_or("otf");
     parent.join(format!("{stem}-subset.{extension}"))
+}
+
+fn is_supported_font_path(path: &Path) -> bool {
+    path.extension().is_some_and(|extension| {
+        extension.eq_ignore_ascii_case("ttf") || extension.eq_ignore_ascii_case("otf")
+    })
 }
 
 fn format_success(locale: Locale, result: &SubsetResult) -> String {
