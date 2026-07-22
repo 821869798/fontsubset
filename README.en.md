@@ -2,11 +2,13 @@
 
 English | [中文](README.md)
 
-A desktop font subsetter written in Rust with
-[HarfBuzz Subset](https://harfbuzz.github.io/harfbuzz-hb-subset.html),
+The current version is a complete Rust rewrite of the desktop font subsetter,
+built with [HarfBuzz Subset](https://harfbuzz.github.io/harfbuzz-hb-subset.html),
 [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui), and
-[GPUI Component](https://github.com/longbridge/gpui-component). PostScript
-outlines are subset directly and are never converted to TrueType.
+[GPUI Component](https://github.com/longbridge/gpui-component) for high
+performance and low memory usage. Its GUI is rendered natively: it does not use
+Electron, Tauri, or any other WebView wrapper. PostScript outlines are subset
+directly and are never converted to TrueType.
 
 > **New in the Rust version:** the previous C#/Avalonia implementation under
 > `legacy/` could subset only TrueType outlines and did not support PostScript
@@ -24,6 +26,8 @@ outlines are subset directly and are never converted to TrueType.
 - Strictly verifies that the output cmap contains only requested characters
   supported by the source font
 - The GUI and console share the same `fontsubset-core` implementation
+- High-performance, low-memory native GPUI interface with no Electron, Tauri,
+  or WebView dependency
 - The GUI accepts dropped fonts, supports live Chinese/English switching, and
   runs subsetting on a background thread
 

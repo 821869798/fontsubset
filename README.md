@@ -2,9 +2,11 @@
 
 [English](README.en.md) | 中文
 
-使用 Rust、[HarfBuzz Subset](https://harfbuzz.github.io/harfbuzz-hb-subset.html)、
+当前版本是使用 Rust 完整重构的桌面字体裁剪工具，基于
+[HarfBuzz Subset](https://harfbuzz.github.io/harfbuzz-hb-subset.html)、
 [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui) 和
-[GPUI Component](https://github.com/longbridge/gpui-component) 实现的桌面字体裁剪工具。
+[GPUI Component](https://github.com/longbridge/gpui-component) 实现，性能高、内存占用小。
+GUI 为原生渲染，不使用 Electron、Tauri 或任何其他 WebView 套壳方案。
 PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
 
 > **Rust 版新增支持：** `legacy/` 中的旧 C#/Avalonia 版本只能裁剪
@@ -21,6 +23,7 @@ PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
 - 默认保留 `GSUB`、`GPOS` 和 `GDEF` 等复杂布局表
 - 严格验证输出 cmap 只包含源字体支持的目标字符
 - GUI 和 console 共用同一套 `fontsubset-core` 实现
+- 高性能、低内存占用的原生 GPUI 界面，不依赖 Electron、Tauri 或 WebView
 - GUI 支持拖入字体、中文和英文实时切换，耗时裁剪在后台线程执行
 
 独立 Type 1 `.pfa` 和 `.pfb` 文件不是 OpenType 字体，当前不直接接受。
