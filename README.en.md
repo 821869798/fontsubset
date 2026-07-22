@@ -8,9 +8,14 @@ A desktop font subsetter written in Rust with
 [GPUI Component](https://github.com/longbridge/gpui-component). PostScript
 outlines are subset directly and are never converted to TrueType.
 
+> **New in the Rust version:** the previous C#/Avalonia implementation under
+> `legacy/` could subset only TrueType outlines and did not support PostScript
+> fonts. The current Rust version supports `.otf` fonts with PostScript CFF/CFF2
+> outlines directly, without converting them to TTF first.
+
 ## Features
 
-- Supports `.ttf` and `.otf` files
+- Supports `.ttf` and `.otf` files, including `.otf` with PostScript outlines
 - Supports TrueType `glyf` outlines
 - Supports PostScript CFF, CID-keyed CFF, and variable CFF2 outlines
 - Recursively scans character-source directories using a configurable regex
@@ -126,8 +131,8 @@ archives, generate SHA-256 checksum files, and publish a GitHub Release. The tag
 must match the workspace version in the root `Cargo.toml`.
 
 ```shell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 The GUI and console are published as separate downloads:

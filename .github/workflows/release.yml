@@ -98,6 +98,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+          RELEASE_NOTES: |
+            ## Rust 重构版本 / Rust Rewrite
+
+            从 0.4.0 开始，FontSubset 已使用 Rust、GPUI 和 HarfBuzz Subset 完成重构。相较于旧 C#/Avalonia 版本，本版本新增对 PostScript 字体的支持，可以直接裁剪采用 CFF、CID-keyed CFF 或 CFF2 轮廓的 `.otf` 字体，无需先转换为 TrueType。
+
+            Starting with 0.4.0, FontSubset has been rewritten in Rust with GPUI and HarfBuzz Subset. Unlike the previous C#/Avalonia version, it now directly subsets `.otf` PostScript fonts with CFF, CID-keyed CFF, or CFF2 outlines without converting them to TrueType first.
         shell: bash
         run: |
           set -euo pipefail
@@ -114,6 +120,8 @@ jobs:
               --generate-notes
               --title "FontSubset ${GITHUB_REF_NAME}"
             )
+            # GitHub prepends an explicit body to the automatically generated notes.
+            release_args+=(--notes "${RELEASE_NOTES}")
             if [[ "${PRERELEASE}" == "true" ]]; then
               release_args+=(--prerelease)
             fi

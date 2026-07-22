@@ -7,9 +7,13 @@
 [GPUI Component](https://github.com/longbridge/gpui-component) 实现的桌面字体裁剪工具。
 PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
 
+> **Rust 版新增支持：** `legacy/` 中的旧 C#/Avalonia 版本只能裁剪
+> TrueType 轮廓，不能裁剪 PostScript 字体。当前 Rust 版本已经支持带
+> PostScript CFF/CFF2 轮廓的 `.otf` 字体，并会直接裁剪，无需先转换为 TTF。
+
 ## 功能
 
-- 支持 `.ttf` 和 `.otf`
+- 支持 `.ttf` 和 `.otf`，包括采用 PostScript 轮廓的 `.otf`
 - 支持 TrueType `glyf` 轮廓
 - 支持 PostScript CFF、CID-keyed CFF 和可变 CFF2 轮廓
 - 递归扫描字符集目录，并按正则表达式匹配文本文件
@@ -117,8 +121,8 @@ cargo clippy --locked --workspace --all-targets -- -D warnings
 `Cargo.toml` 的 workspace 版本一致。
 
 ```shell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 GUI 和 console 会发布为独立下载包：

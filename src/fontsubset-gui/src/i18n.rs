@@ -59,8 +59,12 @@ impl Msg {
         match (self, locale) {
             (Self::Title, Locale::Zh) => "字体裁剪",
             (Self::Title, Locale::En) => "Font Subset",
-            (Self::Subtitle, Locale::Zh) => "支持 TrueType、OpenType CFF/CFF2 的字体裁剪工具",
-            (Self::Subtitle, Locale::En) => "TrueType and OpenType CFF/CFF2 font subsetter",
+            (Self::Subtitle, Locale::Zh) => {
+                "支持 TrueType 与 PostScript（OpenType CFF/CFF2）字体裁剪"
+            }
+            (Self::Subtitle, Locale::En) => {
+                "Supports TrueType and PostScript (OpenType CFF/CFF2) fonts"
+            }
             (Self::LanguageSwitch, Locale::Zh) => "中 / EN",
             (Self::LanguageSwitch, Locale::En) => "EN / 中",
             (Self::InputSourceFont, Locale::Zh) => "输入源字体",
