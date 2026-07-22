@@ -7,8 +7,9 @@ built with [HarfBuzz Subset](https://harfbuzz.github.io/harfbuzz-hb-subset.html)
 [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui), and
 [GPUI Component](https://github.com/longbridge/gpui-component) for high
 performance and low memory usage. Its GUI is rendered natively: it does not use
-Electron, Tauri, or any other WebView wrapper. PostScript outlines are subset
-directly and are never converted to TrueType.
+Electron, Tauri, or any other WebView wrapper. Both TrueType and PostScript
+(CFF/CFF2) outline fonts can be subset directly, with no format conversion or
+extra steps required.
 
 > **New in the Rust version:** the previous C#/Avalonia implementation under
 > `legacy/` could subset only TrueType outlines and did not support PostScript

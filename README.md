@@ -7,7 +7,8 @@
 [GPUI](https://github.com/zed-industries/zed/tree/main/crates/gpui) 和
 [GPUI Component](https://github.com/longbridge/gpui-component) 实现，性能高、内存占用小。
 GUI 为原生渲染，不使用 Electron、Tauri 或任何其他 WebView 套壳方案。
-PostScript 轮廓会被直接裁剪，不会转换为 TrueType。
+完整支持直接裁剪 TrueType 和 PostScript（CFF/CFF2）轮廓字体，
+无需转换字体格式或进行其他额外操作。
 
 > **Rust 版新增支持：** `legacy/` 中的旧 C#/Avalonia 版本只能裁剪
 > TrueType 轮廓，不能裁剪 PostScript 字体。当前 Rust 版本已经支持带
