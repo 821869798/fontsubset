@@ -32,6 +32,8 @@ pub enum Msg {
     StripHintingHelp,
     RetainAscii,
     RetainAsciiHelp,
+    GenerateRemainder,
+    GenerateRemainderHelp,
     ShowOptionHelp,
     StartSubset,
     Subsetting,
@@ -110,6 +112,14 @@ impl Msg {
             }
             (Self::RetainAsciiHelp, Locale::En) => {
                 "Also retain U+0020 through U+007E in addition to characters found in the character files. This includes English letters, digits, spaces, and common punctuation. When disabled, only characters actually found in the character files are retained."
+            }
+            (Self::GenerateRemainder, Locale::Zh) => "反选裁剪（生成差集 B = A - sub_A）",
+            (Self::GenerateRemainder, Locale::En) => "Invert Selection (Remainder B = A - sub_A)",
+            (Self::GenerateRemainderHelp, Locale::Zh) => {
+                "启用后，输出字体将包含源字体中除本次选中字符外的其余全部字符，即源字体减去正常裁剪结果得到的差集字体。若同时需要 sub_A 和差集字体 B，请分别关闭和启用此选项各运行一次。"
+            }
+            (Self::GenerateRemainderHelp, Locale::En) => {
+                "When enabled, the output font contains every character in the source font except the ones currently selected — the remainder left after subtracting a normal subset. To get both sub_A and the remainder B, run once with this off and once with it on."
             }
             (Self::ShowOptionHelp, Locale::Zh) => "查看选项详细说明",
             (Self::ShowOptionHelp, Locale::En) => "Show option details",

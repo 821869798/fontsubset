@@ -23,6 +23,9 @@ pub struct SubsetRequest {
     pub literal_text: Option<String>,
     pub retain_ascii: bool,
     pub strip_hints: bool,
+    /// When true, keep every character supported by the input font
+    /// *except* the selected ones, producing B = A - sub_A instead of sub_A.
+    pub remainder_mode: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -30,8 +33,16 @@ pub struct SubsetResult {
     pub outline: OutlineKind,
     pub engine: String,
     pub matched_files: usize,
+    /// Number of characters selected via text/chars-dir (excludes ASCII,
+    /// which is applied afterward and not subject to `remainder_mode`).
     pub requested_characters: usize,
+    /// Of the selected characters, how many exist in the input font.
     pub supported_characters: usize,
+    /// Number of characters actually present in the output font. Equal to
+    /// `supported_characters` unless `remainder_mode` is set, in which case
+    /// this is the complement (every input font character not selected).
+    pub output_characters: usize,
+    pub remainder_mode: bool,
     pub original_glyphs: u16,
     pub subset_glyphs: u16,
     pub original_size: usize,
@@ -94,7 +105,7 @@ pub fn subset(request: &SubsetRequest) -> Result<SubsetResult> {
     validate_font_extension(&request.output, "output")?;
 
     let collected = collect_characters(request)?;
-    if collected.characters.is_empty() {
+    if collected.characters.is_empty() && !request.retain_ascii {
         bail!(
             "the retained character set is empty; select a character directory, enter text, or retain ASCII"
         );
@@ -105,22 +116,41 @@ pub fn subset(request: &SubsetRequest) -> Result<SubsetResult> {
     let input_face = parse_face(&input_bytes, "input font")?;
     let input_outline = OutlineKind::from_face(&input_face)?;
     let original_glyphs = input_face.number_of_glyphs();
-    let expected_characters: BTreeSet<char> = collected
+    let all_characters = unicode_cmap_characters(&input_face);
+    let selected_characters: BTreeSet<char> = collected
         .characters
         .iter()
         .copied()
-        .filter(|character| input_face.glyph_index(*character).is_some())
+        .filter(|character| all_characters.contains(character))
         .collect();
 
-    if expected_characters.is_empty() {
-        bail!("none of the requested characters are present in the input font");
+    // The selection is inverted first, then ASCII is layered on top
+    // unconditionally: it is a post-processing step, not part of what gets
+    // flipped, so it ends up retained in both the subset and its remainder.
+    let mut retained_characters = if request.remainder_mode {
+        all_characters
+            .difference(&selected_characters)
+            .copied()
+            .collect()
+    } else {
+        selected_characters.clone()
+    };
+    if request.retain_ascii {
+        retained_characters
+            .extend(('\u{20}'..='\u{7e}').filter(|character| all_characters.contains(character)));
+    }
+
+    if retained_characters.is_empty() {
+        bail!(
+            "the retained character set is empty; the selection already covers every character in the input font"
+        );
     }
 
     let harfbuzz = HarfBuzz::new();
     let output_bytes = harfbuzz
         .subset_font(
             &input_bytes,
-            collected.characters.iter().copied(),
+            retained_characters.iter().copied(),
             request.strip_hints,
         )
         .context("font subsetting failed")?;
@@ -135,8 +165,8 @@ pub fn subset(request: &SubsetRequest) -> Result<SubsetResult> {
         );
     }
 
-    validate_cmap(&output_face, &expected_characters)?;
-    validate_outlines(&input_face, &output_face, &expected_characters)?;
+    validate_cmap(&output_face, &retained_characters)?;
+    validate_outlines(&input_face, &output_face, &retained_characters)?;
 
     if let Some(parent) = request
         .output
@@ -154,7 +184,9 @@ pub fn subset(request: &SubsetRequest) -> Result<SubsetResult> {
         engine: harfbuzz.display_name(),
         matched_files: collected.matched_files,
         requested_characters: collected.characters.len(),
-        supported_characters: expected_characters.len(),
+        supported_characters: selected_characters.len(),
+        output_characters: retained_characters.len(),
+        remainder_mode: request.remainder_mode,
         original_glyphs,
         subset_glyphs: output_face.number_of_glyphs(),
         original_size: input_bytes.len(),
@@ -174,9 +206,6 @@ fn collect_characters(request: &SubsetRequest) -> Result<CollectedCharacters> {
 
     if let Some(text) = &request.literal_text {
         characters.extend(text.chars());
-    }
-    if request.retain_ascii {
-        characters.extend('\u{20}'..='\u{7e}');
     }
 
     if let Some(directory) = &request.chars_dir {

@@ -21,6 +21,8 @@ GUI 为原生渲染，不使用 Electron、Tauri 或任何其他 WebView 套壳�
 - 支持 PostScript CFF、CID-keyed CFF 和可变 CFF2 轮廓
 - 递归扫描字符集目录，并按正则表达式匹配文本文件
 - 可保留可见 ASCII 字符，可移除 TrueType 和 CFF/CFF2 Hinting
+- 支持反选裁剪：给定源字体 A 和选中字符裁出的 sub_A，一键得到差集字体
+  B = A - sub_A（即源字体中除选中字符外的全部剩余字符）
 - 默认保留 `GSUB`、`GPOS` 和 `GDEF` 等复杂布局表
 - 严格验证输出 cmap 只包含源字体支持的目标字符
 - GUI 和 console 共用同一套 `fontsubset-core` 实现
@@ -40,15 +42,16 @@ GUI 为原生渲染，不使用 Electron、Tauri 或任何其他 WebView 套壳�
 2. 输入字体确定后会自动建议输出路径，也可以手动修改。
 3. 字符集文件目录是可选项。选择后会递归读取其中匹配正则表达式的文件。
 4. 如果不选择字符集目录，必须勾选“保留 ASCII 字符”；如果只想保留目录文件中出现的字符，请取消该选项。
-5. 按需设置自定义正则或移除 Hinting，然后点击“开始裁剪”。
+5. 按需设置自定义正则、移除 Hinting 或反选裁剪，然后点击“开始裁剪”。
 
 标题区的 **中 / EN** 按钮可以切换界面语言。`GSUB`、`GPOS` 和 `GDEF`
 等布局表始终保留，以避免破坏字体排版和复杂文字塑形。
 
 ### 选项说明
 
-- **保留 ASCII 字符**：无论字符集文件中是否出现，都会额外保留 U+0020 至 U+007E。适合英文、数字和常用符号；想严格按字符集文件裁剪时应取消勾选。
-- **移除 Hinting**：删除用于小字号像素对齐的 TrueType 指令以及 CFF/CFF2 hint 信息，可以进一步减小字体，但旧版 Windows 或低分辨率下的小字号可能变模糊、笔画不均。现代高 DPI 屏幕、macOS 和较大字号通常影响较小。GUI 默认不勾选；只有明确优先考虑体积且能接受显示差异时再启用。
+- **保留 ASCII 字符**：无论字符集文件中是否出现，都会额外保留 U+0020 至 U+007E。适合英文、数字和常用符号；想严格按字符集文件裁剪时应取消勾选。该选项是在选字符之后叠加的后处理，不受“反选裁剪”影响，勾选后无论正选还是反选都会保留 ASCII。
+- **移除 Hinting**：删除用于小字号像素对齐的 TrueType 指令以及 CFF/CFF2 hint 信息，可以进一步减小字体，但旧版 Windows 或低分辨率下的小字号可能变模糊、笔画不均。现代高 DPI 屏幕、macOS 和较大字号通常影响较小。GUI 默认不勾选；只有明确优先考虑体积且能接受显示差异时再启用。该选项对正选和反选裁剪都一样生效。
+- **反选裁剪（生成差集 B = A - sub_A）**：勾选后，输出字体将包含源字体中除本次选中字符外的其余全部字符，即源字体减去正常裁剪结果得到的差集字体。若同时需要 sub_A 和差集字体 B，请分别关闭和启用此选项各运行一次，输出到不同的文件。
 
 ## Console 使用
 
@@ -63,6 +66,17 @@ fontsubset-console -c examples/input_text -a examples/IMPACT.TTF output.ttf
 ```shell
 fontsubset-console --text "你好，世界" input.otf output.otf
 ```
+
+生成差集字体 B = A - sub_A（源字体减去正常裁剪结果，即除选中字符外的全部剩余字符）：
+
+```shell
+fontsubset-console --text "你好，世界" --remainder input.otf remainder.otf
+```
+
+若同时需要 sub_A 和差集字体 B，运行两次，分别去掉和加上 `--remainder`，
+指定不同的输出文件即可。`--ascii` 和 `-s`/`--strip-hints` 在两种模式下
+效果一致：ASCII 字符始终作为后处理叠加保留，不受 `--remainder` 影响；
+Hinting 移除同样对两种模式生效。
 
 兼容旧参数名称 `--charsfile` 和 `--strip`。使用 `-s` 或 `--strip-hints`
 移除 TrueType 和 CFF/CFF2 Hinting。布局表始终保留。

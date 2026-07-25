@@ -23,6 +23,9 @@ extra steps required.
 - Supports PostScript CFF, CID-keyed CFF, and variable CFF2 outlines
 - Recursively scans character-source directories using a configurable regex
 - Can retain visible ASCII characters and remove TrueType and CFF/CFF2 hinting
+- Supports inverted subsetting: given a source font A and a subset sub_A cut
+  from selected characters, produce the remainder font B = A - sub_A (every
+  character in the source font except the selected ones) with one toggle
 - Preserves complex layout tables such as `GSUB`, `GPOS`, and `GDEF` by default
 - Strictly verifies that the output cmap contains only requested characters
   supported by the source font
@@ -46,15 +49,16 @@ are subset directly without conversion to TTF.
 2. An output path is suggested automatically and can be changed manually.
 3. The character-source directory is optional. When selected, matching files are read recursively.
 4. If no character directory is selected, **Retain ASCII Chars** must be enabled. Disable it to retain only characters found in the directory files.
-5. Configure the regex or hint removal as needed, then click **Start Subset**.
+5. Configure the regex, hint removal, or inverted subsetting as needed, then click **Start Subset**.
 
 Use **中 / EN** in the header to switch languages. Layout tables such as
 `GSUB`, `GPOS`, and `GDEF` are always preserved to avoid breaking shaping.
 
 ### Option Details
 
-- **Retain ASCII Chars** additionally keeps U+0020 through U+007E even when those characters are absent from the source files. Disable it for a strict source-file subset.
-- **Strip Hinting** removes TrueType instructions and CFF/CFF2 hints used to align small text to the pixel grid. It can reduce size further, but small text may become blurrier or less even on older Windows systems and low-resolution displays. Modern high-DPI displays, macOS, and larger text are usually less affected. The GUI leaves this disabled by default; enable it only when size is more important than low-resolution rendering fidelity.
+- **Retain ASCII Chars** additionally keeps U+0020 through U+007E even when those characters are absent from the source files. Disable it for a strict source-file subset. This is a post-processing step applied after character selection, so it is unaffected by **Invert Selection**: ASCII is retained whether you subset normally or invert.
+- **Strip Hinting** removes TrueType instructions and CFF/CFF2 hints used to align small text to the pixel grid. It can reduce size further, but small text may become blurrier or less even on older Windows systems and low-resolution displays. Modern high-DPI displays, macOS, and larger text are usually less affected. The GUI leaves this disabled by default; enable it only when size is more important than low-resolution rendering fidelity. It applies the same way in both normal and inverted subsetting.
+- **Invert Selection (Remainder B = A - sub_A)** produces the complement of the normal subset: every character in the source font except the currently selected ones. To get both sub_A and the remainder B, run once with this off and once with it on, each with a different output path.
 
 ## Console Usage
 
@@ -69,6 +73,19 @@ Subset from literal text:
 ```shell
 fontsubset-console --text "Hello, world" input.otf output.otf
 ```
+
+Produce the remainder font B = A - sub_A (the source font minus a normal
+subset, i.e. every character except the selected ones):
+
+```shell
+fontsubset-console --text "Hello, world" --remainder input.otf remainder.otf
+```
+
+To get both sub_A and the remainder B, run twice, with and without
+`--remainder`, each with a different output file. `--ascii` and
+`-s`/`--strip-hints` behave the same in both modes: ASCII characters are
+always retained as a post-processing step regardless of `--remainder`, and
+hint stripping applies identically either way.
 
 The legacy option names `--charsfile` and `--strip` remain available. Use `-s`
 or `--strip-hints` to remove TrueType and CFF/CFF2 hinting. Layout tables are

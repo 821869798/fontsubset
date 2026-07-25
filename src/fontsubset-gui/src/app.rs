@@ -33,6 +33,7 @@ pub struct FontSubsetApp {
     custom_regex: bool,
     strip_hints: bool,
     retain_ascii: bool,
+    remainder_mode: bool,
     dialog_open: bool,
     running: bool,
     locale: Locale,
@@ -102,6 +103,7 @@ impl FontSubsetApp {
             custom_regex: false,
             strip_hints: false,
             retain_ascii: true,
+            remainder_mode: false,
             dialog_open: false,
             running: false,
             locale,
@@ -311,6 +313,7 @@ impl FontSubsetApp {
             literal_text: None,
             retain_ascii: self.retain_ascii,
             strip_hints: self.strip_hints,
+            remainder_mode: self.remainder_mode,
         };
         let inbox = Arc::clone(&self.inbox);
         self.running = true;
@@ -498,16 +501,46 @@ impl FontSubsetApp {
                             )),
                     )
                     .child(
-                        Button::new("start-subset")
-                            .primary()
-                            .label(if self.running {
-                                Msg::Subsetting.get(locale)
-                            } else {
-                                Msg::StartSubset.get(locale)
-                            })
-                            .disabled(self.running || self.dialog_open)
-                            .on_click(cx.listener(|this, _, _window, cx| this.start_subset(cx))),
+                        h_flex()
+                            .flex_none()
+                            .gap_1()
+                            .items_center()
+                            .child(
+                                Checkbox::new("remainder-mode")
+                                    .items_center()
+                                    .aria_label(Msg::GenerateRemainder.get(locale))
+                                    .child(
+                                        div()
+                                            .line_height(relative(1.25))
+                                            .pb(px(1.))
+                                            .child(Msg::GenerateRemainder.get(locale)),
+                                    )
+                                    .checked(self.remainder_mode)
+                                    .disabled(self.running || self.dialog_open)
+                                    .on_click(cx.listener(|this, checked, _window, cx| {
+                                        this.remainder_mode = *checked;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(self.render_option_help(
+                                "generate-remainder-help",
+                                Msg::GenerateRemainder,
+                                Msg::GenerateRemainderHelp,
+                            )),
                     ),
+            )
+            .child(
+                h_flex().w_full().justify_end().child(
+                    Button::new("start-subset")
+                        .primary()
+                        .label(if self.running {
+                            Msg::Subsetting.get(locale)
+                        } else {
+                            Msg::StartSubset.get(locale)
+                        })
+                        .disabled(self.running || self.dialog_open)
+                        .on_click(cx.listener(|this, _, _window, cx| this.start_subset(cx))),
+                ),
             )
             .into_any_element()
     }
@@ -680,9 +713,15 @@ fn is_supported_font_path(path: &Path) -> bool {
 }
 
 fn format_success(locale: Locale, result: &SubsetResult) -> String {
-    match locale {
+    let prefix = match (locale, result.remainder_mode) {
+        (Locale::Zh, true) => "裁剪成功（差集 B = A - sub_A）",
+        (Locale::Zh, false) => "裁剪成功",
+        (Locale::En, true) => "Subset succeeded (remainder B = A - sub_A)",
+        (Locale::En, false) => "Subset succeeded",
+    };
+    let base = match locale {
         Locale::Zh => format!(
-            "裁剪成功：{} | 字形 {} -> {} | 大小 {} -> {} 字节（减少 {:.2}%）| 字符 {}/{} | {}",
+            "{prefix}：{} | 字形 {} -> {} | 大小 {} -> {} 字节（减少 {:.2}%）| 选中字符 {}/{} | {}",
             result.outline,
             result.original_glyphs,
             result.subset_glyphs,
@@ -694,7 +733,7 @@ fn format_success(locale: Locale, result: &SubsetResult) -> String {
             result.output.display()
         ),
         Locale::En => format!(
-            "Subset succeeded: {} | glyphs {} -> {} | size {} -> {} bytes ({:.2}% smaller) | characters {}/{} | {}",
+            "{prefix}: {} | glyphs {} -> {} | size {} -> {} bytes ({:.2}% smaller) | selected characters {}/{} | {}",
             result.outline,
             result.original_glyphs,
             result.subset_glyphs,
@@ -705,6 +744,13 @@ fn format_success(locale: Locale, result: &SubsetResult) -> String {
             result.requested_characters,
             result.output.display()
         ),
+    };
+    if !result.remainder_mode {
+        return base;
+    }
+    match locale {
+        Locale::Zh => format!("{base} | 差集字符数 {}", result.output_characters),
+        Locale::En => format!("{base} | remainder characters {}", result.output_characters),
     }
 }
 

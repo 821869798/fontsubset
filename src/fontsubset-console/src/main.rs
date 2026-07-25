@@ -36,6 +36,11 @@ struct Cli {
     #[arg(short = 's', long = "strip-hints", visible_alias = "strip")]
     strip_hints: bool,
 
+    /// Invert the selection: keep every character supported by the input
+    /// font except the selected ones, producing B = A - sub_A.
+    #[arg(long = "remainder")]
+    remainder_mode: bool,
+
     /// Source .ttf or .otf font.
     #[arg(value_name = "INPUT_FONT")]
     input: PathBuf,
@@ -64,16 +69,27 @@ fn run(cli: Cli) -> Result<()> {
         literal_text: cli.text,
         retain_ascii: cli.retain_ascii,
         strip_hints: cli.strip_hints,
+        remainder_mode: cli.remainder_mode,
     })?;
 
-    println!("Subset succeeded");
+    if result.remainder_mode {
+        println!("Remainder subset succeeded (B = A - sub_A)");
+    } else {
+        println!("Subset succeeded");
+    }
     println!("  Engine: {}", result.engine);
     println!("  Outline: {}", result.outline);
     println!("  Matched files: {}", result.matched_files);
     println!(
-        "  Characters: {} requested, {} present in source",
+        "  Selected characters: {} requested, {} present in source",
         result.requested_characters, result.supported_characters
     );
+    if result.remainder_mode {
+        println!(
+            "  Output characters (remainder): {}",
+            result.output_characters
+        );
+    }
     println!(
         "  Glyphs: {} -> {}",
         result.original_glyphs, result.subset_glyphs
