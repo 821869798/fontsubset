@@ -14,7 +14,4 @@ test = false
 fontsubset-core = { path = "../fontsubset-core" }
 parking_lot.workspace = true
 rfd.workspace = true
-gpui = { package = "gpui-pre", version = "0.3.3" }
-gpui_platform = { package = "gpui-pre-platform", version = "0.3.3" }
-gpui-component = "0.6.0"
-gpui-component-assets = { package = "gpui-kit-assets", version = "0.6.0" }
+gpui-kit = { version = "0.6.0", default-features = false, features = ["component", "assets"] }

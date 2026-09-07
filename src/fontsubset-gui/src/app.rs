@@ -7,8 +7,8 @@ use std::{
 };
 
 use fontsubset_core::{DEFAULT_FILE_REGEX, SubsetRequest, SubsetResult, subset};
-use gpui::*;
-use gpui_component::{
+use gpui_kit::*;
+use gpui_kit::component::{
     ActiveTheme, Disableable,
     button::{Button, ButtonVariants},
     checkbox::Checkbox,
